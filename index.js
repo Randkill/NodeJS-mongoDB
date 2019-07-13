@@ -2,6 +2,8 @@
 const MongoClient = require('mongodb').MongoClient;     //enables to connect to mongoDB server
 const assert = require('assert');       //checks boolean(true/false) values
 
+const dbOperation = require('./operations');
+
 //to startup a connection to mongoDB server 
 //first designing a URL
 const url = 'mongodb://localhost:27017/conFusion';      //accessing the conFusion database
@@ -9,28 +11,34 @@ const url = 'mongodb://localhost:27017/conFusion';      //accessing the conFusio
 MongoClient.connect(url, (err, client) => {                 //db gives us access to database and then performing various operations!
     assert.equal(err, null);    //check to make sure if error is equal to null or not
 
-    console.log('Connected correctly to database!');
+    console.log('Connected correctly to mongoDB!');
 
     const db = client.db("conFusion");
 
-    const collection = db.collection("dishes");
-    collection.insertOne({
-        "name" : "Erfan",
-        "description" : "Hello, welcome to my program!"
-    },
-    (err, result) => {
-        assert.equal(err, null);
+    console.log('Connected to conFusion database!')
+ 
+    dbOperation.insertDocument(db, {name : "Erfan" , description : "hello"},
+    'dishes', (result) => {
+        console.log('Inserted document:\n', result.ops);
 
-        console.log("After INSERT :\n" + JSON.stringify(result.ops));       //ops is number of operations done
+        dbOperation.findDocument(db, 'dishes', (docs) => {
+            console.log('Found documents :\n', docs);
 
-        collection.find({}).toArray().then((docs) => {    //searching for everything in the collection
-            console.log("Found :\n" + JSON.stringify(docs));    //docs is all the documents which are matched to .FIND() operation
+            dbOperation.updateDocument(db, {name: "Erfan" },
+            {description : "Updated test!"}, 'dishes', (result) => {
+                console.log('Updated Document:\n', result.result);
 
-            db.dropCollection("dishes", (err, result) => {
-                assert.equal(err, null);
-                //db.close();     lose the connection to the database
-                client.close();
-            })
-        })     
+                dbOperation.findDocument(db, 'dishes', (docs) => {
+                    console.log('Found documents :\n' , docs);
+
+                    db.dropCollection('dishes', (result) => {
+                        console.log('Dropped collection dishes');
+                        
+                        client.close();
+                        console.log('Closed connection to mongoDB!');
+                    });  
+                });
+            });
+        });
     });
 });    
